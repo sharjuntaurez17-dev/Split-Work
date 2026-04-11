@@ -2,7 +2,7 @@ import { Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export default function ProtectedRoute({ children }) {
-  const { user, profile, isLoading } = useAuth()
+  const { profile, isLoading } = useAuth()
 
   if (isLoading) {
     return (
@@ -20,11 +20,8 @@ export default function ProtectedRoute({ children }) {
     )
   }
 
-  if (!user) return <Navigate to="/login" replace />
-
-  if (profile && profile.name === null && window.location.pathname !== '/onboarding/name') {
-    return <Navigate to="/onboarding/name" replace />
-  }
+  // If no profile (name not entered yet), redirect to onboarding
+  if (!profile?.name) return <Navigate to="/onboarding/name" replace />
 
   return children
 }

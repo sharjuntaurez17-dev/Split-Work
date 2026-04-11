@@ -29,16 +29,14 @@ export default function App() {
             <Route path="/login" element={<LoginScreen />} />
             <Route path="/signup" element={<SignupScreen />} />
 
-            {/* Onboarding */}
-            <Route path="/onboarding/name" element={
-              <ProtectedRoute><EnterNameScreen /></ProtectedRoute>
-            } />
+            {/* Onboarding — no auth required */}
+            <Route path="/onboarding/name" element={<EnterNameScreen />} />
 
             {/* Main app with nested tabs */}
             <Route path="/dashboard" element={
               <ProtectedRoute><DashboardScreen /></ProtectedRoute>
             }>
-              <Route index element={<Navigate to="tasks" replace />} />
+              <Route index element={<Navigate to="activity" replace />} />
               <Route path="tasks"    element={<TasksScreen />} />
               <Route path="friends"  element={<FriendsScreen />} />
               <Route path="activity" element={<ActivityScreen />} />

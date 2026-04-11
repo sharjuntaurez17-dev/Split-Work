@@ -1,7 +1,37 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
+/* ===== Tailwind v4 CSS Theme ===== */
+@theme {
+  /* Colors */
+  --color-teal:       #0CC5B9;
+  --color-teal-bg:    #4CBB9B;
+  --color-teal-light: #E9FAF8;
+  --color-teal-dark:  #0AA99E;
+  --color-navy:       #25303D;
+  --color-slate:      #3D4B5A;
+  --color-mint:       #9FE5D5;
+  --color-app-bg:     #F4F7F6;
+  --color-field-bg:   #E8EEED;
+  --color-dark-bg:    #0F1923;
+  --color-muted:      #7E8A93;
+
+  /* Sizing */
+  --max-width-app: 480px;
+
+  /* Border radius */
+  --radius-card: 18px;
+  --radius-xl2:  20px;
+
+  /* Shadows */
+  --shadow-card: 0 4px 24px rgba(12,197,185,0.10);
+  --shadow-nav:  0 -2px 20px rgba(0,0,0,0.08);
+
+  /* Fonts */
+  --font-family-serif: Georgia, serif;
+  --font-family-sans:  'DM Sans', system-ui, sans-serif;
+}
+
+/* ===== Base ===== */
 @layer base {
   *, *::before, *::after { box-sizing: border-box; }
 
@@ -16,19 +46,87 @@
   }
 }
 
-@layer utilities {
-  .safe-area-bottom {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-  }
+/* ===== Custom utility classes ===== */
+@utility safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
 
-  /* Screen wrapper used by every page */
-  .screen {
-    @apply min-h-screen flex flex-col;
-  }
+@utility screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
 
-  .screen-inner {
-    @apply w-full max-w-app mx-auto flex-1 flex flex-col;
+@utility screen-inner {
+  width: 100%;
+  max-width: var(--max-width-app);
+  margin-left: auto;
+  margin-right: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+@utility btn-teal {
+  background-color: var(--color-teal);
+  color: white;
+  font-weight: 700;
+  padding-top: 0.875rem;
+  padding-bottom: 0.875rem;
+  border-radius: 14px;
+  width: 100%;
+  font-size: 16px;
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+  transition: all 0.15s;
+  border: none;
+  cursor: pointer;
+  &:active {
+    transform: scale(0.98);
   }
+}
+
+@utility input-field {
+  width: 100%;
+  background-color: var(--color-field-bg);
+  border-radius: 0.75rem;
+  padding: 0.875rem 1rem;
+  font-size: 15px;
+  color: var(--color-navy);
+  font-weight: 500;
+  outline: none;
+  transition: all 0.15s;
+  border: 2px solid transparent;
+  &:focus {
+    border-color: rgba(12, 197, 185, 0.4);
+    box-shadow: 0 0 0 3px rgba(12, 197, 185, 0.1);
+  }
+}
+
+@utility card {
+  background-color: white;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 1.25rem 1.25rem;
+}
+
+@utility page-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 3rem 1.5rem 1rem;
+}
+
+@utility back-btn {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  background-color: var(--color-field-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: none;
+  cursor: pointer;
 }
 
 /* ===== Animations ===== */
@@ -45,27 +143,4 @@
 @keyframes slide-up {
   from { transform: translateY(100%); opacity: 0; }
   to   { transform: translateY(0);    opacity: 1; }
-}
-
-/* ===== Tailwind component shortcuts ===== */
-@layer components {
-  .btn-teal {
-    @apply bg-teal text-white font-bold py-3.5 rounded-[14px] w-full text-[16px] shadow-lg active:scale-[0.98] transition-all;
-  }
-
-  .input-field {
-    @apply w-full bg-field-bg rounded-xl px-4 py-3.5 text-[15px] text-navy font-medium outline-none focus:ring-2 focus:ring-teal/40 transition-all;
-  }
-
-  .card {
-    @apply bg-white rounded-card shadow-card px-5 py-4;
-  }
-
-  .page-header {
-    @apply flex items-center gap-3 px-6 pt-12 pb-4;
-  }
-
-  .back-btn {
-    @apply w-9 h-9 rounded-full bg-field-bg flex items-center justify-center flex-shrink-0;
-  }
 }

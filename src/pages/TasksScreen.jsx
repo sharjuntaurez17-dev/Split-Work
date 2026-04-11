@@ -1,111 +1,94 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../context/AppContext'
-import { useAuth } from '../context/AuthContext'
-import ChoreCard from '../components/ChoreCard'
 import PretextText from '../lib/PretextText'
 
-const FILTERS = ['All', 'Pending', 'Done']
+const FILTERS = ['All', 'Today', 'Done']
 
 export default function TasksScreen() {
   const [filter, setFilter] = useState('All')
-  const { chores, pendingChores, doneChores, loading } = useApp()
-  const { profile } = useAuth()
+  const { chores, pendingChores, doneChores, members, updateChoreStatus, loading, DAY_NAMES } = useApp()
   const navigate = useNavigate()
 
   const filteredChores = filter === 'All'
     ? chores
-    : filter === 'Pending'
+    : filter === 'Today'
     ? pendingChores
     : doneChores
 
-  const totalChores  = chores.length
-  const doneCount    = doneChores.length
-
   return (
-    <div className="px-5 pt-6 pb-4">
+    <div className="p-5">
       {/* Header */}
-      <div className="flex items-center justify-between mb-1">
-        <PretextText
-          text={`Hi ${profile?.name?.split(' ')[0] ?? 'there'} 👋`}
-          font="26px DM Sans"
-          lineHeight={1.3}
-          className="text-[26px] font-extrabold text-navy"
-        />
-        <button
-          onClick={() => navigate('/add-chore')}
-          className="w-10 h-10 rounded-full bg-teal flex items-center justify-center shadow-card"
-        >
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-            <path d="M9 3v12M3 9h12" stroke="white" strokeWidth="2.2" strokeLinecap="round"/>
-          </svg>
+      <div className="flex items-center justify-between pt-2">
+        <div>
+          <div className="text-[#7E8A93] text-xs font-semibold uppercase tracking-[0.18em]">Tasks</div>
+          <div className="text-[#22313F] text-[24px] font-extrabold mt-1">Your chores</div>
+        </div>
+        <button onClick={() => navigate('/add-chore')}
+          className="w-10 h-10 rounded-2xl bg-[#E9FAF8] text-[#0CC5B9] flex items-center justify-center font-bold text-xl">
+          +
         </button>
       </div>
-      <div className="text-muted text-[13px] mb-5">Here's what needs to get done</div>
-
-      {/* Progress */}
-      {totalChores > 0 && (
-        <div className="card mb-5">
-          <div className="flex items-center justify-between mb-2.5">
-            <span className="text-[13px] font-semibold text-slate">Chores completed</span>
-            <span className="text-teal font-bold text-[14px]">{doneCount} / {totalChores}</span>
-          </div>
-          <div className="h-2 bg-field-bg rounded-full overflow-hidden">
-            <div
-              className="h-full bg-teal rounded-full transition-all duration-500"
-              style={{ width: totalChores > 0 ? `${(doneCount / totalChores) * 100}%` : '0%' }}
-            />
-          </div>
-        </div>
-      )}
 
       {/* Filter chips */}
-      <div className="flex gap-2 mb-4">
+      <div className="mt-5 flex gap-2 text-xs font-semibold">
         {FILTERS.map(f => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`px-4 py-1.5 rounded-full text-[13px] font-semibold transition-all ${
+          <button key={f} onClick={() => setFilter(f)}
+            className={`px-3 py-2 rounded-full ${
               filter === f
-                ? 'bg-teal text-white shadow-sm'
-                : 'bg-white text-muted border border-gray-100'
-            }`}
-          >
+                ? 'bg-[#0CC5B9] text-white'
+                : 'bg-white text-[#7F8A94] border border-slate-200'
+            }`}>
             {f}
           </button>
         ))}
       </div>
 
-      {/* Chore list */}
-      {loading ? (
-        <div className="flex justify-center py-10">
-          <div className="flex gap-2">
-            {[0,1,2].map(i => (
-              <div key={i} className="w-2 h-2 rounded-full bg-teal"
-                style={{ animation: `dot-bounce 1.2s ${i*0.2}s infinite ease-in-out` }}/>
-            ))}
+      {/* Task list */}
+      <div className="mt-4 space-y-3">
+        {loading ? (
+          <div className="flex justify-center py-10">
+            <div className="flex gap-2">
+              {[0,1,2].map(i => (
+                <div key={i} className="w-2 h-2 rounded-full bg-[#0CC5B9]"
+                  style={{ animation: `dot-bounce 1.2s ${i*0.2}s infinite ease-in-out` }}/>
+              ))}
+            </div>
           </div>
-        </div>
-      ) : filteredChores.length === 0 ? (
-        <div className="flex flex-col items-center py-12 gap-3">
-          <div className="text-4xl">✨</div>
-          <PretextText
-            text={filter === 'Done' ? 'No completed chores yet' : 'No chores here!'}
-            font="16px DM Sans"
-            lineHeight={1.5}
-            className="text-[16px] font-semibold text-slate text-center"
-          />
-          <p className="text-muted text-[13px] text-center">
-            {filter === 'All' ? 'Tap + to add your first chore' : ''}
-          </p>
-        </div>
-      ) : (
-        <div>
-          {filteredChores.map(chore => (
-            <ChoreCard key={chore.id} chore={chore} />
-          ))}
-        </div>
-      )}
+        ) : filteredChores.length === 0 ? (
+          <div className="flex flex-col items-center py-12 gap-2">
+            <div className="text-3xl">✨</div>
+            <div className="text-[#7F8A94] text-sm">No chores here</div>
+          </div>
+        ) : (
+          filteredChores.map(chore => (
+            <div key={chore.id} className="bg-white rounded-[18px] p-4 shadow-sm border border-slate-100">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <PretextText text={chore.title} font="15px DM Sans" lineHeight={1.4}
+                    className={`font-bold text-[15px] ${chore.status === 'done' ? 'text-[#7F8A94] line-through' : 'text-[#25303D]'}`} />
+                  <div className="text-[#7F8A94] text-sm mt-1">
+                    {chore.assignee?.name ?? members.find(m => m.id === chore.assignee_id)?.name ?? 'Anyone'}
+                  </div>
+                  <div className="text-[#A0A8B0] text-xs mt-2">
+                    {chore.due_day != null ? DAY_NAMES[chore.due_day] : ''}
+                  </div>
+                </div>
+                <button onClick={() => updateChoreStatus(chore.id, chore.status === 'done' ? 'pending' : 'done')}
+                  className={`w-5 h-5 rounded-full border-2 mt-1 flex-shrink-0 flex items-center justify-center ${
+                    chore.status === 'done' ? 'bg-[#0CC5B9] border-[#0CC5B9]' : 'border-[#0CC5B9]'
+                  }`}>
+                  {chore.status === 'done' && (
+                    <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                      <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   )
 }

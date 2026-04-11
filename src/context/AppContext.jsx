@@ -4,17 +4,26 @@ import { useAuth } from './AuthContext'
 
 const AppContext = createContext(null)
 
+const MEMBERS_KEY = 'splitwork_members'
+const CHORES_KEY = 'splitwork_chores'
+
+function loadLocal(key) {
+  try { return JSON.parse(localStorage.getItem(key)) || [] }
+  catch { return [] }
+}
+
 export function AppProvider({ children }) {
   const { profile } = useAuth()
-  const [chores, setChores] = useState([])
-  const [members, setMembers] = useState([])
+  const [chores, setChores] = useState(() => loadLocal(CHORES_KEY))
+  const [members, setMembers] = useState(() => loadLocal(MEMBERS_KEY))
   const [house, setHouse] = useState(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (!profile?.house_id) {
-      setChores([])
-      setMembers([])
+      // In local-only mode, keep localStorage data
+      setChores(loadLocal(CHORES_KEY))
+      setMembers(loadLocal(MEMBERS_KEY))
       setHouse(null)
       return
     }
@@ -65,35 +74,85 @@ export function AppProvider({ children }) {
   }, [profile?.house_id])
 
   async function addChore({ title, assigneeId, dueDays, recurrenceDays }) {
-    if (!profile?.house_id) throw new Error('No house')
-    const { data, error } = await supabase
-      .from('chores')
-      .insert({
-        house_id: profile.house_id,
-        title,
-        assignee_id: assigneeId || null,
-        due_day: dueDays ?? null,
-        recurrence_days: recurrenceDays ?? null,
-        status: 'pending',
-      })
-      .select('*, assignee:profiles!chores_assignee_id_fkey(name)')
-      .single()
-    if (error) throw error
-    return data
+    // If Supabase house is set, use remote
+    if (profile?.house_id) {
+      const { data, error } = await supabase
+        .from('chores')
+        .insert({
+          house_id: profile.house_id,
+          title,
+          assignee_id: assigneeId || null,
+          due_day: dueDays ?? null,
+          recurrence_days: recurrenceDays ?? null,
+          status: 'pending',
+        })
+        .select('*, assignee:profiles!chores_assignee_id_fkey(name)')
+        .single()
+      if (error) throw error
+      return data
+    }
+    // Local-only mode
+    const assignee = members.find(m => m.id === assigneeId)
+    const chore = {
+      id: crypto.randomUUID(),
+      title,
+      assignee_id: assigneeId || null,
+      assignee: assignee ? { name: assignee.name } : null,
+      due_day: dueDays ?? null,
+      recurrence_days: recurrenceDays ?? null,
+      status: 'pending',
+      created_at: new Date().toISOString(),
+    }
+    setChores(c => {
+      const updated = [chore, ...c]
+      localStorage.setItem(CHORES_KEY, JSON.stringify(updated))
+      return updated
+    })
+    return chore
   }
 
   async function updateChoreStatus(id, status) {
-    const { error } = await supabase
-      .from('chores')
-      .update({ status })
-      .eq('id', id)
-    if (error) throw error
-    setChores(c => c.map(x => x.id === id ? { ...x, status } : x))
+    if (profile?.house_id) {
+      const { error } = await supabase
+        .from('chores')
+        .update({ status })
+        .eq('id', id)
+      if (error) throw error
+    }
+    setChores(c => {
+      const updated = c.map(x => x.id === id ? { ...x, status } : x)
+      localStorage.setItem(CHORES_KEY, JSON.stringify(updated))
+      return updated
+    })
   }
 
   async function deleteChore(id) {
-    await supabase.from('chores').delete().eq('id', id)
-    setChores(c => c.filter(x => x.id !== id))
+    if (profile?.house_id) {
+      await supabase.from('chores').delete().eq('id', id)
+    }
+    setChores(c => {
+      const updated = c.filter(x => x.id !== id)
+      localStorage.setItem(CHORES_KEY, JSON.stringify(updated))
+      return updated
+    })
+  }
+
+  function addMember({ name, phone }) {
+    const member = { id: crypto.randomUUID(), name, phone }
+    setMembers(m => {
+      const updated = [...m, member]
+      localStorage.setItem(MEMBERS_KEY, JSON.stringify(updated))
+      return updated
+    })
+    return member
+  }
+
+  function removeMember(id) {
+    setMembers(m => {
+      const updated = m.filter(x => x.id !== id)
+      localStorage.setItem(MEMBERS_KEY, JSON.stringify(updated))
+      return updated
+    })
   }
 
   const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -111,6 +170,8 @@ export function AppProvider({ children }) {
       addChore,
       updateChoreStatus,
       deleteChore,
+      addMember,
+      removeMember,
       DAY_NAMES,
     }}>
       {children}

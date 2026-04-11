@@ -18,9 +18,11 @@ export default function ScheduleSetupScreen() {
   const [error, setError]               = useState('')
   const navigate  = useNavigate()
   const location  = useLocation()
-  const { addChore } = useApp()
+  const { addChore, members } = useApp()
 
-  const { title, assigneeId } = location.state ?? {}
+  const { title, selectedPeople = [], twoTogether } = location.state ?? {}
+
+  const selectedMembers = members.filter(m => selectedPeople.includes(m.id))
 
   function toggleDay(val) {
     setSelectedDays(prev =>
@@ -28,95 +30,107 @@ export default function ScheduleSetupScreen() {
     )
   }
 
+  const selectedLabels = DAYS.filter(d => selectedDays.includes(d.value)).map(d => d.label)
+
+  // Build rotation preview: cycle through selected people across days
+  function getRotation() {
+    if (selectedMembers.length === 0) return selectedLabels.map(day => ({ day, name: 'Anyone' }))
+    return selectedLabels.map((day, i) => ({
+      day,
+      name: twoTogether && selectedMembers.length >= 2
+        ? `${selectedMembers[i % selectedMembers.length].name} & ${selectedMembers[(i + 1) % selectedMembers.length].name}`
+        : selectedMembers[i % selectedMembers.length].name
+    }))
+  }
+
   async function handleSave() {
     if (!title) { navigate('/add-chore'); return }
-    setLoading(true)
-    setError('')
+    setLoading(true); setError('')
     try {
-      await addChore({
-        title,
-        assigneeId: assigneeId ?? null,
-        dueDays: selectedDays[0] ?? null,
-        recurrenceDays: selectedDays.length > 0 ? selectedDays : null,
-      })
+      const sortedDays = [...selectedDays].sort((a, b) => a - b)
+      for (let i = 0; i < Math.max(sortedDays.length, 1); i++) {
+        const assignee = selectedMembers.length > 0
+          ? selectedMembers[i % selectedMembers.length]
+          : null
+        await addChore({
+          title,
+          assigneeId: assignee?.id ?? null,
+          dueDays: sortedDays[i] ?? null,
+          recurrenceDays: sortedDays.length > 0 ? sortedDays : null,
+        })
+      }
       navigate('/dashboard/tasks')
     } catch (err) {
-      setError(err.message)
-      setLoading(false)
+      setError(err.message); setLoading(false)
     }
   }
 
   return (
-    <div className="screen bg-app-bg">
-      <div className="screen-inner">
+    <div className="screen bg-[#F7FAF9]">
+      <div className="screen-inner p-5">
         {/* Header */}
-        <div className="page-header">
-          <button onClick={() => navigate(-1)} className="back-btn">
-            <svg width="9" height="16" viewBox="0 0 9 16" fill="none">
-              <path d="M8 1L1 8l7 7" stroke="#25303D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-          <div className="flex-1">
-            <span className="text-[18px] font-extrabold text-navy">Set Schedule</span>
-            {title && <div className="text-[13px] text-muted mt-0.5 truncate">"{title}"</div>}
+        <div className="flex items-center justify-between pt-2">
+          <div>
+            <div className="text-[#7E8A93] text-xs font-semibold uppercase tracking-[0.18em]">Schedule</div>
+            <div className="text-[#22313F] text-[24px] font-extrabold mt-1">Pick days of week</div>
           </div>
+          <button onClick={() => navigate(-1)} className="text-[#0CC5B9] font-bold text-sm">Done</button>
         </div>
 
-        <div className="flex flex-col flex-1 px-6">
-          <div className="text-[14px] text-slate mb-4">
-            Which days should this chore repeat? (optional)
+        <div className="mt-5 space-y-4 flex-1">
+          {/* Day grid */}
+          <div className="bg-white rounded-[18px] p-4 shadow-sm border border-slate-100">
+            <div className="text-[#3D4B5A] text-[13px] font-semibold mb-3">Select days</div>
+            <div className="grid grid-cols-4 gap-2 text-center text-sm font-semibold">
+              {DAYS.map(day => (
+                <button key={day.value} type="button" onClick={() => toggleDay(day.value)}
+                  className={`rounded-xl py-3 transition-all ${
+                    selectedDays.includes(day.value)
+                      ? 'bg-[#0CC5B9] text-white'
+                      : 'bg-[#F4F7F6] text-[#66727D] border border-slate-200'
+                  }`}>
+                  {day.label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Day pills */}
-          <div className="grid grid-cols-4 gap-2.5 mb-6">
-            {DAYS.map(day => (
-              <button
-                key={day.value}
-                type="button"
-                onClick={() => toggleDay(day.value)}
-                className={`py-3 rounded-xl text-[14px] font-bold transition-all ${
-                  selectedDays.includes(day.value)
-                    ? 'bg-teal text-white shadow-sm'
-                    : 'bg-white text-navy border border-gray-100'
-                }`}
-              >
-                {day.label}
-              </button>
-            ))}
-          </div>
-
+          {/* Repeat rule */}
           {selectedDays.length > 0 && (
-            <div className="card mb-5">
-              <div className="text-[13px] text-muted mb-1">Repeats on</div>
-              <div className="text-[15px] font-semibold text-navy">
-                {DAYS.filter(d => selectedDays.includes(d.value)).map(d => d.label).join(', ')}
+            <div className="bg-white rounded-[18px] p-4 shadow-sm border border-slate-100">
+              <div className="text-[#3D4B5A] text-[13px] font-semibold mb-3">Repeat rule</div>
+              <div className="rounded-xl bg-[#E9FAF8] px-4 py-4 border border-[#BDEFEA]">
+                <div className="text-[#0AA99E] font-bold text-sm">
+                  {selectedMembers.length > 1 ? 'Rotates between members' : 'Repeats every week'}
+                </div>
+                <div className="text-[#66727D] text-sm mt-1">Selected days: {selectedLabels.join(', ')}</div>
               </div>
             </div>
           )}
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 text-[13px] rounded-xl px-4 py-2.5 mb-4">
-              {error}
+          {/* Preview with rotation */}
+          {selectedDays.length > 0 && (
+            <div className="bg-white rounded-[18px] p-4 shadow-sm border border-slate-100">
+              <div className="text-[#3D4B5A] text-[13px] font-semibold mb-3">Preview</div>
+              <div className="space-y-2 text-sm">
+                {getRotation().map(({ day, name }) => (
+                  <div key={day} className="rounded-xl bg-[#F4F7F6] border border-slate-200 px-4 py-3 flex items-center justify-between">
+                    <span className="text-[#25303D]">{day}</span>
+                    <span className="text-[#0CC5B9] font-semibold">{name}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
-          <div className="flex-1"/>
-          <div className="pb-10 flex flex-col gap-3">
-            <button
-              onClick={handleSave}
-              disabled={loading}
-              className="btn-teal disabled:opacity-50"
-            >
-              {loading ? 'Saving…' : 'Save Chore'}
-            </button>
-            <button
-              type="button"
-              onClick={handleSave}
-              className="py-3 text-[14px] font-semibold text-muted"
-            >
-              Skip — save without schedule
-            </button>
-          </div>
+          {error && <div className="text-red-500 text-[13px] text-center">{error}</div>}
+        </div>
+
+        <div className="pt-4 pb-5">
+          <button onClick={handleSave} disabled={loading}
+            className="w-full bg-[#0CC5B9] text-white rounded-[18px] py-3.5 font-bold text-[16px] shadow-lg disabled:opacity-50">
+            {loading ? 'Saving…' : 'Save weekly schedule'}
+          </button>
         </div>
       </div>
     </div>
