@@ -1,12 +1,37 @@
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-body {
-  font-family: 'DM Sans', sans-serif;
-  background: #0B1017;
-  -webkit-font-smoothing: antialiased;
-  min-height: 100vh;
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html, body, #root {
+    height: 100%;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+  }
 }
 
+@layer utilities {
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Screen wrapper used by every page */
+  .screen {
+    @apply min-h-screen flex flex-col;
+  }
+
+  .screen-inner {
+    @apply w-full max-w-app mx-auto flex-1 flex flex-col;
+  }
+}
+
+/* ===== Animations ===== */
 @keyframes dot-bounce {
   0%, 80%, 100% { transform: scale(0.5); opacity: 0.28; }
   40%           { transform: scale(1.15); opacity: 1; }
@@ -15,4 +40,32 @@ body {
 @keyframes fade-up {
   from { opacity: 0; transform: translateY(18px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ===== Tailwind component shortcuts ===== */
+@layer components {
+  .btn-teal {
+    @apply bg-teal text-white font-bold py-3.5 rounded-[14px] w-full text-[16px] shadow-lg active:scale-[0.98] transition-all;
+  }
+
+  .input-field {
+    @apply w-full bg-field-bg rounded-xl px-4 py-3.5 text-[15px] text-navy font-medium outline-none focus:ring-2 focus:ring-teal/40 transition-all;
+  }
+
+  .card {
+    @apply bg-white rounded-card shadow-card px-5 py-4;
+  }
+
+  .page-header {
+    @apply flex items-center gap-3 px-6 pt-12 pb-4;
+  }
+
+  .back-btn {
+    @apply w-9 h-9 rounded-full bg-field-bg flex items-center justify-center flex-shrink-0;
+  }
 }

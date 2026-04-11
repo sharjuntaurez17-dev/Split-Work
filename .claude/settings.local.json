@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npx tailwindcss:*)",
+      "Bash(./node_modules/.bin/tailwindcss init:*)",
+      "Bash(node_modules/.bin/tailwindcss init:*)",
+      "Bash(powershell -Command \"& '.\\\\node_modules\\\\.bin\\\\tailwindcss' init -p\")",
+      "Bash(powershell -Command ':*)",
+      "Bash(powershell -Command \"New-Item -ItemType Directory -Force -Path 'C:\\\\Users\\\\sharjun ahmed\\\\Documents\\\\GitHub\\\\Split-Work\\\\src\\\\context' | Out-Null; Write-Host 'Done'\")"
+    ]
+  }
+}

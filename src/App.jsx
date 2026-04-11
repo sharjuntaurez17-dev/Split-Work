@@ -1,73 +1,72 @@
-import { useState } from "react";
-import { C } from "./theme";
-import SplashScreen from "./pages/SplashScreen";
-import LoginScreen  from "./pages/LoginScreen";
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider } from './context/AuthContext'
+import { AppProvider } from './context/AppContext'
+import ProtectedRoute from './components/ProtectedRoute'
 
-// Screens in order
-const SCREENS = ["splash", "login", "home"];
-
-// Thin phone-frame wrapper — every screen renders inside this
-function PhoneFrame({ children }) {
-  return (
-    <div style={{
-      display: "flex", flexDirection: "column",
-      alignItems: "center", justifyContent: "center",
-      minHeight: "100vh", background: C.bg, gap: 26,
-      padding: "24px 0",
-    }}>
-      <link
-        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet"
-      />
-      <div style={{
-        width: 390, height: 780, borderRadius: 46,
-        overflow: "hidden", position: "relative",
-        boxShadow:
-          "0 0 0 10px #0F151C, 0 0 0 12px #1E2A35, 0 32px 80px rgba(0,0,0,0.75)",
-      }}>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-// Placeholder home screen so login has somewhere to go
-function HomeScreen() {
-  return (
-    <div style={{
-      width: "100%", height: "100%",
-      background: "#0F1923",
-      display: "flex", flexDirection: "column",
-      alignItems: "center", justifyContent: "center", gap: 12,
-    }}>
-      <div style={{ fontSize: 48 }}>🏠</div>
-      <div style={{
-        color: C.white, fontSize: 22, fontWeight: 700,
-        fontFamily: "Georgia, serif",
-      }}>Home</div>
-      <div style={{
-        color: "rgba(255,255,255,0.4)", fontSize: 13.5,
-        fontFamily: "'DM Sans', sans-serif",
-      }}>Coming soon…</div>
-    </div>
-  );
-}
+import SplashScreen from './pages/SplashScreen'
+import LoginScreen from './pages/LoginScreen'
+import SignupScreen from './pages/SignupScreen'
+import EnterNameScreen from './pages/EnterNameScreen'
+import DashboardScreen from './pages/DashboardScreen'
+import TasksScreen from './pages/TasksScreen'
+import FriendsScreen from './pages/FriendsScreen'
+import ActivityScreen from './pages/ActivityScreen'
+import AccountScreen from './pages/AccountScreen'
+import AddChoreScreen from './pages/AddChoreScreen'
+import ScheduleSetupScreen from './pages/ScheduleSetupScreen'
+import AddPeopleScreen from './pages/AddPeopleScreen'
+import SettingsScreen from './pages/SettingsScreen'
+import SettingsOptionsScreen from './pages/SettingsOptionsScreen'
 
 export default function App() {
-  const [screen, setScreen] = useState("splash");
-
-  const advance = () => {
-    setScreen(s => {
-      const idx = SCREENS.indexOf(s);
-      return SCREENS[Math.min(idx + 1, SCREENS.length - 1)];
-    });
-  };
-
   return (
-    <PhoneFrame>
-      {screen === "splash" && <SplashScreen onDone={advance} />}
-      {screen === "login"  && <LoginScreen  onLogin={advance} />}
-      {screen === "home"   && <HomeScreen />}
-    </PhoneFrame>
-  );
+    <BrowserRouter>
+      <AuthProvider>
+        <AppProvider>
+          <Routes>
+            {/* Public */}
+            <Route path="/" element={<SplashScreen />} />
+            <Route path="/login" element={<LoginScreen />} />
+            <Route path="/signup" element={<SignupScreen />} />
+
+            {/* Onboarding */}
+            <Route path="/onboarding/name" element={
+              <ProtectedRoute><EnterNameScreen /></ProtectedRoute>
+            } />
+
+            {/* Main app with nested tabs */}
+            <Route path="/dashboard" element={
+              <ProtectedRoute><DashboardScreen /></ProtectedRoute>
+            }>
+              <Route index element={<Navigate to="tasks" replace />} />
+              <Route path="tasks"    element={<TasksScreen />} />
+              <Route path="friends"  element={<FriendsScreen />} />
+              <Route path="activity" element={<ActivityScreen />} />
+              <Route path="account"  element={<AccountScreen />} />
+            </Route>
+
+            {/* Modal / full-page flows */}
+            <Route path="/add-chore" element={
+              <ProtectedRoute><AddChoreScreen /></ProtectedRoute>
+            } />
+            <Route path="/add-chore/schedule" element={
+              <ProtectedRoute><ScheduleSetupScreen /></ProtectedRoute>
+            } />
+            <Route path="/add-people" element={
+              <ProtectedRoute><AddPeopleScreen /></ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute><SettingsScreen /></ProtectedRoute>
+            } />
+            <Route path="/settings/:option" element={
+              <ProtectedRoute><SettingsOptionsScreen /></ProtectedRoute>
+            } />
+
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </AppProvider>
+      </AuthProvider>
+    </BrowserRouter>
+  )
 }
