@@ -1,11 +1,13 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './AuthContext'
+import { requestNotificationPermission, notifyTodayChores, notifyRotation } from '../lib/notify'
 
 const AppContext = createContext(null)
 
 const MEMBERS_KEY = 'splitwork_members'
 const CHORES_KEY = 'splitwork_chores'
+const HISTORY_KEY = 'splitwork_history'
 
 function loadLocal(key) {
   try { return JSON.parse(localStorage.getItem(key)) || [] }
@@ -16,15 +18,40 @@ export function AppProvider({ children }) {
   const { profile } = useAuth()
   const [chores, setChores] = useState(() => loadLocal(CHORES_KEY))
   const [members, setMembers] = useState(() => loadLocal(MEMBERS_KEY))
+  const [turnHistory, setTurnHistory] = useState(() => loadLocal(HISTORY_KEY))
   const [house, setHouse] = useState(null)
   const [loading, setLoading] = useState(false)
 
+  // Auto-cleanup: remove history older than 1 month
+  useEffect(() => {
+    const oneMonthAgo = new Date()
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1)
+    const cutoff = oneMonthAgo.toISOString()
+    setTurnHistory(prev => {
+      const cleaned = prev.filter(h => h.date >= cutoff)
+      if (cleaned.length !== prev.length) {
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(cleaned))
+      }
+      return cleaned
+    })
+  }, [])
+
+  // Request notification permission and notify today's chores
+  const notifSent = useRef(false)
+  useEffect(() => {
+    if (notifSent.current) return
+    if (chores.length === 0) return
+    notifSent.current = true
+    requestNotificationPermission().then(granted => {
+      if (granted) {
+        notifyTodayChores(chores, members, turnHistory)
+      }
+    })
+  }, [chores, members, turnHistory])
+
   useEffect(() => {
     if (!profile?.house_id) {
-      // In local-only mode, keep localStorage data
-      setChores(loadLocal(CHORES_KEY))
-      setMembers(loadLocal(MEMBERS_KEY))
-      setHouse(null)
+      // Local-only mode — never clear localStorage data
       return
     }
 
@@ -73,7 +100,7 @@ export function AppProvider({ children }) {
     return () => supabase.removeChannel(channel)
   }, [profile?.house_id])
 
-  async function addChore({ title, assigneeId, dueDays, recurrenceDays }) {
+  async function addChore({ title, assigneeId, dueDays, recurrenceDays, rotation }) {
     // If Supabase house is set, use remote
     if (profile?.house_id) {
       const { data, error } = await supabase
@@ -91,15 +118,20 @@ export function AppProvider({ children }) {
       if (error) throw error
       return data
     }
-    // Local-only mode
-    const assignee = members.find(m => m.id === assigneeId)
+    // Local-only mode — rotation stores the cycle of people
+    const rotationList = rotation && rotation.length > 0 ? rotation : []
+    const firstAssignee = rotationList.length > 0
+      ? members.find(m => m.id === rotationList[0])
+      : members.find(m => m.id === assigneeId)
     const chore = {
       id: crypto.randomUUID(),
       title,
-      assignee_id: assigneeId || null,
-      assignee: assignee ? { name: assignee.name } : null,
+      assignee_id: firstAssignee?.id || assigneeId || null,
+      assignee: firstAssignee ? { name: firstAssignee.name } : null,
       due_day: dueDays ?? null,
       recurrence_days: recurrenceDays ?? null,
+      rotation: rotationList,
+      rotation_index: 0,
       status: 'pending',
       created_at: new Date().toISOString(),
     }
@@ -120,7 +152,44 @@ export function AppProvider({ children }) {
       if (error) throw error
     }
     setChores(c => {
-      const updated = c.map(x => x.id === id ? { ...x, status } : x)
+      const updated = c.map(x => {
+        if (x.id !== id) return x
+        // Log turn in history
+        if (status === 'done' || (status === 'done' && x.rotation?.length > 1)) {
+          const entry = {
+            id: crypto.randomUUID(),
+            choreId: x.id,
+            choreTitle: x.title,
+            memberId: x.assignee_id,
+            memberName: x.assignee?.name ?? 'Someone',
+            date: new Date().toISOString(),
+          }
+          setTurnHistory(prev => {
+            const updated = [entry, ...prev]
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(updated))
+            return updated
+          })
+        }
+        // If marking done and chore has a rotation cycle, advance to next person
+        if (status === 'done' && x.rotation && x.rotation.length > 1) {
+          const nextIndex = ((x.rotation_index ?? 0) + 1) % x.rotation.length
+          const nextMemberId = x.rotation[nextIndex]
+          const nextMember = members.find(m => m.id === nextMemberId)
+          // Send notification to next person
+          if (nextMember) {
+            notifyRotation(x.title, nextMember.name)
+          }
+          return {
+            ...x,
+            status: 'pending',
+            rotation_index: nextIndex,
+            assignee_id: nextMemberId,
+            assignee: nextMember ? { name: nextMember.name } : x.assignee,
+            last_done_by: x.assignee?.name ?? 'Someone',
+          }
+        }
+        return { ...x, status }
+      })
       localStorage.setItem(CHORES_KEY, JSON.stringify(updated))
       return updated
     })
@@ -155,6 +224,19 @@ export function AppProvider({ children }) {
     })
   }
 
+  function getMemberStats(memberId) {
+    const memberChores = chores.filter(c =>
+      c.assignee_id === memberId || (c.rotation && c.rotation.includes(memberId))
+    )
+    const turnsThisMonth = turnHistory.filter(h => h.memberId === memberId)
+    // Group turns by chore title
+    const choreBreakdown = {}
+    turnsThisMonth.forEach(h => {
+      choreBreakdown[h.choreTitle] = (choreBreakdown[h.choreTitle] || 0) + 1
+    })
+    return { memberChores, turnsThisMonth, choreBreakdown }
+  }
+
   const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   const pendingChores = chores.filter(c => c.status === 'pending')
   const doneChores = chores.filter(c => c.status === 'done')
@@ -172,6 +254,8 @@ export function AppProvider({ children }) {
       deleteChore,
       addMember,
       removeMember,
+      turnHistory,
+      getMemberStats,
       DAY_NAMES,
     }}>
       {children}

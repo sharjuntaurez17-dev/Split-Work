@@ -17,6 +17,8 @@ import ScheduleSetupScreen from './pages/ScheduleSetupScreen'
 import AddPeopleScreen from './pages/AddPeopleScreen'
 import SettingsScreen from './pages/SettingsScreen'
 import SettingsOptionsScreen from './pages/SettingsOptionsScreen'
+import MemberDetailScreen from './pages/MemberDetailScreen'
+import NotificationsScreen from './pages/NotificationsScreen'
 
 export default function App() {
   return (
@@ -58,6 +60,12 @@ export default function App() {
             } />
             <Route path="/settings/:option" element={
               <ProtectedRoute><SettingsOptionsScreen /></ProtectedRoute>
+            } />
+            <Route path="/member/:memberId" element={
+              <ProtectedRoute><MemberDetailScreen /></ProtectedRoute>
+            } />
+            <Route path="/notifications" element={
+              <ProtectedRoute><NotificationsScreen /></ProtectedRoute>
             } />
 
             {/* Fallback */}

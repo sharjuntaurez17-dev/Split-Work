@@ -2,16 +2,11 @@ import { NavLink } from 'react-router-dom'
 
 function TaskTabIcon({ active }) {
   return (
-    <div className="flex flex-col items-center gap-1">
-      <div className={`w-11 h-11 rounded-[14px] flex items-center justify-center shadow-sm ${
-        active ? 'bg-[#20B8AE]' : 'bg-white border border-slate-200'
-      }`}>
-        <div className={`relative w-7 h-7 ${active ? 'text-white' : 'text-[#4B8FF7]'}`}>
-          <div className="absolute inset-0 rounded-full border-[4px] border-current" />
-          <div className="absolute left-[7px] top-[6px] w-[11px] h-[6px] rotate-[-45deg] border-l-[4px] border-b-[4px] border-current" />
-        </div>
-      </div>
-    </div>
+    <svg viewBox="0 0 24 24" className={`w-8 h-8 ${active ? 'text-[#16A085]' : 'text-[#5B616B]'}`}
+      fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M8 12l2.5 3L16 9" />
+    </svg>
   )
 }
 

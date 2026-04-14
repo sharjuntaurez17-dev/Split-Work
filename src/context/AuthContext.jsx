@@ -67,6 +67,8 @@ export function AuthProvider({ children }) {
     await supabase.auth.signOut()
     setProfile(null)
     localStorage.removeItem(PROFILE_KEY)
+    localStorage.removeItem('splitwork_members')
+    localStorage.removeItem('splitwork_chores')
   }
 
   async function updateProfile(updates) {

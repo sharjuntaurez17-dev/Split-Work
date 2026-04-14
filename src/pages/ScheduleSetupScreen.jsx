@@ -48,17 +48,14 @@ export default function ScheduleSetupScreen() {
     setLoading(true); setError('')
     try {
       const sortedDays = [...selectedDays].sort((a, b) => a - b)
-      for (let i = 0; i < Math.max(sortedDays.length, 1); i++) {
-        const assignee = selectedMembers.length > 0
-          ? selectedMembers[i % selectedMembers.length]
-          : null
-        await addChore({
-          title,
-          assigneeId: assignee?.id ?? null,
-          dueDays: sortedDays[i] ?? null,
-          recurrenceDays: sortedDays.length > 0 ? sortedDays : null,
-        })
-      }
+      const rotation = selectedMembers.map(m => m.id)
+      await addChore({
+        title,
+        assigneeId: rotation[0] ?? null,
+        dueDays: sortedDays[0] ?? null,
+        recurrenceDays: sortedDays.length > 0 ? sortedDays : null,
+        rotation,
+      })
       navigate('/dashboard/tasks')
     } catch (err) {
       setError(err.message); setLoading(false)
