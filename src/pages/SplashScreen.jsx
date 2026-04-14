@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import SplitworkLogo from '../components/SplitworkLogo'
+import { SparklesText } from '../components/ui/sparkles-text'
 
 export default function SplashScreen() {
   const [visible, setVisible] = useState(false)
@@ -22,18 +22,17 @@ export default function SplashScreen() {
           transitionTimingFunction: 'cubic-bezier(0.34,1.56,0.64,1)',
         }}
       >
-        <div className="mb-7">
-          <SplitworkLogo size={132} />
+        <SparklesText
+          text="Splitwork"
+          colors={{ first: '#ffffff', second: '#25303D' }}
+          sparklesCount={14}
+          className="text-white text-5xl font-extrabold tracking-tight"
+          style={{ fontFamily: 'Georgia, serif' }}
+        />
+        <div className="text-white/90 text-[12px] font-semibold tracking-[0.22em] mt-4">
+          FAIR CHORES. HAPPY HOMES.
         </div>
-        <div className="text-center">
-          <div className="text-white text-4xl font-extrabold tracking-tight" style={{ fontFamily: 'Georgia, serif' }}>
-            Splitwork
-          </div>
-          <div className="text-white/90 text-[12px] font-semibold tracking-[0.22em] mt-3">
-            FAIR CHORES. HAPPY HOMES.
-          </div>
-          <div className="w-11 h-[3px] rounded-full bg-[#25303D]/40 mx-auto mt-4" />
-        </div>
+        <div className="w-11 h-[3px] rounded-full bg-[#25303D]/40 mx-auto mt-4" />
       </div>
 
       <div

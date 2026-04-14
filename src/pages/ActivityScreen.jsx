@@ -87,6 +87,17 @@ export default function ActivityScreen() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {/* AI Assistant */}
+          <button onClick={() => navigate('/ai')} className="relative">
+            <svg viewBox="0 0 24 24" className="w-7 h-7 text-[#25303D]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4" width="18" height="12" rx="2" />
+              <circle cx="9" cy="10" r="1.5" fill="currentColor" stroke="none" />
+              <circle cx="15" cy="10" r="1.5" fill="currentColor" stroke="none" />
+              <path d="M9 18v2" /><path d="M15 18v2" />
+              <line x1="9" y1="20" x2="15" y2="20" />
+              <path d="M12 1v3" />
+            </svg>
+          </button>
           {/* Notification bell */}
           <button onClick={() => navigate('/notifications')} className="relative">
             <svg viewBox="0 0 24 24" className="w-7 h-7 text-[#25303D]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
